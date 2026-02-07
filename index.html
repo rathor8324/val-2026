@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Will You Be My Valentine?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-rose-100 flex items-center justify-center p-4">
+    
+    <!-- Initial State: Name Input -->
+    <div id="nameForm" class="w-full max-w-md">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 text-center">
+            <h1 class="text-4xl font-bold text-pink-400 mb-6">💕</h1>
+            <h2 class="text-2xl font-semibold text-pink-500 mb-6">What is your name?</h2>
+            <input 
+                type="text" 
+                id="nameInput" 
+                placeholder="Enter your name..."
+                class="w-full px-4 py-3 rounded-xl border-2 border-pink-200 focus:border-pink-400 focus:outline-none text-pink-600 placeholder-pink-300 mb-4 transition-all"
+            >
+            <button 
+                id="submitBtn"
+                class="w-full bg-gradient-to-r from-pink-400 to-rose-400 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            >
+                Let's Go
+            </button>
+        </div>
+    </div>
+
+    <!-- Main State: Valentine Question (Hidden Initially) -->
+    <div id="valentineCard" class="hidden w-full max-w-2xl">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 text-center float-animation">
+            <div class="mb-6">
+                <img 
+                    id="valentineGif" 
+                    src="" 
+                    alt="Cute Valentine GIF"
+                    class="w-64 h-64 mx-auto rounded-2xl object-cover shadow-lg"
+                >
+            </div>
+            <h2 class="text-3xl font-bold text-pink-500 mb-8" id="questionText">
+                Will you be my Valentine, <span id="userName" class="text-rose-500"></span>?
+            </h2>
+            <div class="flex gap-4 justify-center flex-wrap relative">
+                <button 
+                    id="yesBtn"
+                    class="bg-gradient-to-r from-pink-400 to-rose-400 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                    style="font-size: 1rem; padding: 1rem 2rem;"
+                >
+                    Yes 💖
+                </button>
+                <button 
+                    id="noBtn"
+                    class="bg-gray-200 text-gray-700 font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                >
+                    No
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration State (Hidden Initially) -->
+    <div id="celebration" class="hidden fixed inset-0 bg-gradient-to-br from-pink-200 via-rose-200 to-pink-300 flex flex-col items-center justify-center z-50">
+        <div class="text-center">
+            <img 
+                id="successGif" 
+                src="" 
+                alt="Success GIF"
+                class="w-80 h-80 mx-auto rounded-2xl object-cover shadow-2xl mb-6"
+            >
+            <h1 class="text-6xl font-bold text-pink-600 mb-4 animate-bounce">Yay! 🎉</h1>
+            <p class="text-2xl text-rose-600 font-semibold mb-8">You made my day! 💕</p>
+            <button 
+                id="playAgainBtn"
+                class="bg-gradient-to-r from-pink-400 to-rose-400 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-xl"
+            >
+                Play Again 💖
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let noClickCount = 0;
+        let yesButtonSize = 1; // multiplier for font-size and padding
+        const noButtonTexts = [
+            'No',
+            'Wait, really?',
+            'Think again!',
+            'I\'ll be sad...',
+            'Are you sure?',
+            'Last chance!',
+            'Please? 🥺'
+        ];
+        let isEvasive = false;
+
+        // DOM elements
+        const nameForm = document.getElementById('nameForm');
+        const valentineCard = document.getElementById('valentineCard');
+        const celebration = document.getElementById('celebration');
+        const nameInput = document.getElementById('nameInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const userNameSpan = document.getElementById('userName');
+        const yesBtn = document.getElementById('yesBtn');
+        const noBtn = document.getElementById('noBtn');
+        const questionText = document.getElementById('questionText');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+
+        // Load a cute Valentine GIF from Tenor
+        function loadValentineGif() {
+            // You can replace this URL with any Tenor GIF URL
+            // Visit tenor.com, search for "valentine" or "love", right-click a GIF, and copy the image URL
+            const gifUrl = 'https://media.tenor.com/images/8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8/tenor.gif';
+            const img = document.getElementById('valentineGif');
+            img.src = gifUrl;
+            img.onerror = function() {
+                // Fallback: Show emoji if GIF fails to load
+                this.style.display = 'none';
+                if (!this.parentElement.querySelector('.gif-fallback')) {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'gif-fallback text-8xl mb-4';
+                    fallback.textContent = '💕';
+                    this.parentElement.insertBefore(fallback, this);
+                }
+            };
+        }
+
+        // Load a success/celebration GIF from Tenor
+        function loadSuccessGif() {
+            // You can replace this URL with any Tenor GIF URL
+            // Visit tenor.com, search for "celebration" or "happy", right-click a GIF, and copy the image URL
+            const gifUrl = 'https://media.tenor.com/images/8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8/tenor.gif';
+            const img = document.getElementById('successGif');
+            img.src = gifUrl;
+            img.onerror = function() {
+                // Fallback: Show emoji if GIF fails to load
+                this.style.display = 'none';
+                if (!this.parentElement.querySelector('.gif-fallback')) {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'gif-fallback text-8xl mb-4';
+                    fallback.textContent = '🎉';
+                    this.parentElement.insertBefore(fallback, this);
+                }
+            };
+        }
+
+        // Submit name handler
+        submitBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            if (name) {
+                userNameSpan.textContent = name;
+                nameForm.classList.add('hidden');
+                valentineCard.classList.remove('hidden');
+                loadValentineGif();
+            }
+        });
+
+        nameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitBtn.click();
+            }
+        });
+
+        // Yes button handler
+        yesBtn.addEventListener('click', () => {
+            valentineCard.classList.add('hidden');
+            celebration.classList.remove('hidden');
+            loadSuccessGif();
+            
+            // Confetti explosion
+            const duration = 3000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                const particleCount = 50 * (timeLeft / duration);
+                
+                confetti({
+                    ...defaults,
+                    particleCount,
+                    origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+                });
+                confetti({
+                    ...defaults,
+                    particleCount,
+                    origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+                });
+            }, 250);
+        });
+
+        // No button handler
+        noBtn.addEventListener('click', handleNoClick);
+
+        // Enable evasive mode for No button
+        function enableEvasiveMode() {
+            const currentNoBtn = document.getElementById('noBtn');
+            currentNoBtn.addEventListener('mouseenter', teleportButton);
+        }
+
+        // Teleport button to random position
+        function teleportButton(e) {
+            e.preventDefault();
+            const currentNoBtn = document.getElementById('noBtn');
+            const buttonRect = currentNoBtn.getBoundingClientRect();
+            const buttonWidth = buttonRect.width;
+            const buttonHeight = buttonRect.height;
+            const maxX = window.innerWidth - buttonWidth - 20;
+            const maxY = window.innerHeight - buttonHeight - 20;
+            
+            const randomX = Math.max(10, Math.random() * maxX);
+            const randomY = Math.max(10, Math.random() * maxY);
+            
+            // Remove from flex container flow and position absolutely
+            currentNoBtn.style.position = 'fixed';
+            currentNoBtn.style.left = `${randomX}px`;
+            currentNoBtn.style.top = `${randomY}px`;
+            currentNoBtn.style.zIndex = '1000';
+            currentNoBtn.style.margin = '0';
+            currentNoBtn.style.transition = 'none';
+            
+            // Reset transition after a brief moment for smooth movement
+            setTimeout(() => {
+                currentNoBtn.style.transition = 'all 0.1s ease-out';
+            }, 50);
+        }
+
+        // Reset game to initial state
+        function resetGame() {
+            // Reset state variables
+            noClickCount = 0;
+            yesButtonSize = 1;
+            isEvasive = false;
+            
+            // Reset Yes button size
+            yesBtn.style.fontSize = '1rem';
+            yesBtn.style.padding = '1rem 2rem';
+            
+            // Get current No button and reset it
+            const currentNoBtn = document.getElementById('noBtn');
+            currentNoBtn.textContent = 'No';
+            currentNoBtn.style.position = '';
+            currentNoBtn.style.left = '';
+            currentNoBtn.style.top = '';
+            currentNoBtn.style.zIndex = '';
+            currentNoBtn.style.margin = '';
+            currentNoBtn.style.transition = '';
+            
+            // Remove all event listeners by cloning the button
+            const newNoBtn = currentNoBtn.cloneNode(true);
+            currentNoBtn.parentNode.replaceChild(newNoBtn, currentNoBtn);
+            // Re-attach click handler to new button
+            document.getElementById('noBtn').addEventListener('click', handleNoClick);
+            
+            // Clear name input
+            nameInput.value = '';
+            
+            // Remove GIF fallback elements if they exist
+            const valentineFallback = document.querySelector('#valentineCard .gif-fallback');
+            const successFallback = document.querySelector('#celebration .gif-fallback');
+            if (valentineFallback) valentineFallback.remove();
+            if (successFallback) successFallback.remove();
+            
+            // Reset GIF images
+            document.getElementById('valentineGif').src = '';
+            document.getElementById('valentineGif').style.display = '';
+            document.getElementById('successGif').src = '';
+            document.getElementById('successGif').style.display = '';
+            
+            // Show name form, hide other screens
+            nameForm.classList.remove('hidden');
+            valentineCard.classList.add('hidden');
+            celebration.classList.add('hidden');
+        }
+
+        // No button click handler (extracted for re-attachment after reset)
+        function handleNoClick() {
+            noClickCount++;
+            
+            // Get current No button element
+            const currentNoBtn = document.getElementById('noBtn');
+            
+            // Change button text
+            if (noClickCount < noButtonTexts.length) {
+                currentNoBtn.textContent = noButtonTexts[noClickCount];
+            } else {
+                currentNoBtn.textContent = noButtonTexts[noButtonTexts.length - 1];
+            }
+            
+            // Grow Yes button by 20%
+            yesButtonSize *= 1.2;
+            const currentFontSize = parseFloat(window.getComputedStyle(yesBtn).fontSize);
+            const currentPadding = parseFloat(window.getComputedStyle(yesBtn).paddingTop);
+            yesBtn.style.fontSize = `${currentFontSize * 1.2}px`;
+            yesBtn.style.paddingTop = `${currentPadding * 1.2}px`;
+            yesBtn.style.paddingBottom = `${currentPadding * 1.2}px`;
+            yesBtn.style.paddingLeft = `${currentPadding * 1.2 * 2}px`;
+            yesBtn.style.paddingRight = `${currentPadding * 1.2 * 2}px`;
+            
+            // Enable evasive mode after 5 clicks
+            if (noClickCount >= 5 && !isEvasive) {
+                isEvasive = true;
+                enableEvasiveMode();
+            }
+        }
+
+        // Play Again button handler
+        playAgainBtn.addEventListener('click', resetGame);
+    </script>
+</body>
+</html>
