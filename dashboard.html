@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valentine Logs Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-rose-100 p-4">
+    <div class="w-full max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <div>
+                    <h1 class="text-4xl font-bold text-pink-500 mb-2">💕 Valentine Logs Dashboard</h1>
+                    <p class="text-gray-600">View all submitted names and timestamps</p>
+                </div>
+                <div class="flex gap-3">
+                    <a 
+                        href="index.html"
+                        class="bg-gradient-to-r from-pink-400 to-rose-400 text-white font-semibold py-2 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                    >
+                        ← Back to Form
+                    </a>
+                    <button 
+                        id="clearBtn"
+                        class="bg-red-500 text-white font-semibold py-2 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                    >
+                        Clear Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Container -->
+        <div class="bg-white rounded-3xl shadow-2xl p-8">
+            <div id="logsContainer">
+                <!-- Logs will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const logsContainer = document.getElementById('logsContainer');
+        const clearBtn = document.getElementById('clearBtn');
+
+        /**
+         * Format timestamp to readable date/time string
+         * @param {string} isoString - ISO timestamp string
+         * @returns {string} Formatted date/time string
+         */
+        function formatTimestamp(isoString) {
+            try {
+                const date = new Date(isoString);
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+            } catch (e) {
+                return isoString; // Return original if parsing fails
+            }
+        }
+
+        /**
+         * Load and display logs from localStorage
+         */
+        function loadLogs() {
+            let logs = [];
+            
+            try {
+                const storedLogs = localStorage.getItem('val_logs');
+                if (storedLogs) {
+                    logs = JSON.parse(storedLogs);
+                }
+            } catch (e) {
+                console.error('Error reading logs from localStorage:', e);
+                logsContainer.innerHTML = '<p class="text-red-500 text-center py-8">Error loading logs. Please try refreshing the page.</p>';
+                return;
+            }
+
+            // Display logs or empty state
+            if (logs.length === 0) {
+                logsContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <p class="text-3xl mb-4">📝</p>
+                        <p class="text-2xl text-gray-500 font-semibold">No logs yet</p>
+                        <p class="text-gray-400 mt-2">Submit a name on the main page to see it here!</p>
+                    </div>
+                `;
+            } else {
+                // Create table-like structure for logs
+                let logsHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b-2 border-pink-200">
+                                    <th class="text-left py-3 px-4 text-pink-600 font-semibold">#</th>
+                                    <th class="text-left py-3 px-4 text-pink-600 font-semibold">Name</th>
+                                    <th class="text-left py-3 px-4 text-pink-600 font-semibold">Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                // Display logs in reverse order (newest first)
+                logs.slice().reverse().forEach((log, index) => {
+                    const displayIndex = logs.length - index; // Show original index (1-based)
+                    logsHTML += `
+                        <tr class="border-b border-pink-100 hover:bg-pink-50 transition-colors fade-in">
+                            <td class="py-3 px-4 text-gray-700 font-medium">${displayIndex}</td>
+                            <td class="py-3 px-4 text-gray-800 font-semibold">${log.name}</td>
+                            <td class="py-3 px-4 text-gray-600">${formatTimestamp(log.timestamp)}</td>
+                        </tr>
+                    `;
+                });
+
+                logsHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-6 text-center text-gray-500">
+                        <p>Total entries: <span class="font-semibold text-pink-600">${logs.length}</span></p>
+                    </div>
+                `;
+
+                logsContainer.innerHTML = logsHTML;
+            }
+        }
+
+        /**
+         * Clear all logs from localStorage
+         */
+        function clearLogs() {
+            if (confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
+                try {
+                    localStorage.removeItem('val_logs');
+                    loadLogs(); // Refresh display
+                } catch (e) {
+                    console.error('Error clearing logs:', e);
+                    alert('Error clearing logs. Please try again.');
+                }
+            }
+        }
+
+        // Event listeners
+        clearBtn.addEventListener('click', clearLogs);
+
+        // Load logs on page load
+        loadLogs();
+    </script>
+</body>
+</html>

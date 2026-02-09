@@ -18,6 +18,17 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-rose-100 flex items-center justify-center p-4">
     
+    <!-- Dashboard Link -->
+    <div class="fixed top-4 right-4 z-50">
+        <a 
+            href="dashboard.html"
+            class="bg-white text-pink-500 font-semibold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            title="View Dashboard"
+        >
+            📊 Dashboard
+        </a>
+    </div>
+    
     <!-- Initial State: Name Input -->
     <div id="nameForm" class="w-full max-w-md">
         <div class="bg-white rounded-3xl shadow-2xl p-8 text-center">
@@ -159,6 +170,34 @@
         submitBtn.addEventListener('click', () => {
             const name = nameInput.value.trim();
             if (name) {
+                // Store name and timestamp in localStorage
+                const logEntry = {
+                    name: name,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Get existing logs or initialize empty array
+                let logs = [];
+                try {
+                    const storedLogs = localStorage.getItem('val_logs');
+                    if (storedLogs) {
+                        logs = JSON.parse(storedLogs);
+                    }
+                } catch (e) {
+                    console.error('Error reading logs from localStorage:', e);
+                    logs = [];
+                }
+                
+                // Append new log entry
+                logs.push(logEntry);
+                
+                // Save back to localStorage
+                try {
+                    localStorage.setItem('val_logs', JSON.stringify(logs));
+                } catch (e) {
+                    console.error('Error saving logs to localStorage:', e);
+                }
+                
                 userNameSpan.textContent = name;
                 nameForm.classList.add('hidden');
                 valentineCard.classList.remove('hidden');
